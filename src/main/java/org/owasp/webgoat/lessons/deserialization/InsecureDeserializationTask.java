@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.io.InvalidClassException;
 import java.io.ObjectInputFilter;
 import java.io.ObjectInputStream;
+import java.io.ObjectStreamClass;
+import java.util.List;
 import java.util.Base64;
 import org.dummy.insecure.framework.VulnerableTaskHolder;
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
