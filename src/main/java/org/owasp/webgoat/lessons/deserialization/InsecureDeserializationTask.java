@@ -45,9 +45,28 @@ import org.springframework.web.bind.annotation.RestController;
 })
 public class InsecureDeserializationTask extends AssignmentEndpoint {
 
-  private static final ObjectInputFilter DESERIALIZATION_FILTER =
-      ObjectInputFilter.Config.createFilter(
-          VulnerableTaskHolder.class.getName() + ";java.lang.String;java.time.LocalDateTime;java.time.*;!*");
+  private static class SecureObjectInputStream extends ObjectInputStream {
+
+    private static final List<String> APPROVED_CLASSES = List.of(
+        VulnerableTaskHolder.class.getName(),
+        "java.lang.String",
+        "java.time.LocalDateTime",
+        "java.time.Ser"
+    );
+
+    SecureObjectInputStream(java.io.InputStream in) throws IOException {
+      super(in);
+    }
+
+    @Override
+    protected Class<?> resolveClass(ObjectStreamClass osc)
+        throws IOException, ClassNotFoundException {
+      if (!APPROVED_CLASSES.contains(osc.getName())) {
+        throw new InvalidClassException("Unauthorized deserialization attempt", osc.getName());
+      }
+      return super.resolveClass(osc);
+    }
+  }
 
   @PostMapping("/InsecureDeserialization/task")
   @ResponseBody
@@ -61,7 +80,6 @@ public class InsecureDeserializationTask extends AssignmentEndpoint {
 
     try (ObjectInputStream ois =
         new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(b64token)))) {
-      ois.setObjectInputFilter(DESERIALIZATION_FILTER);
       before = System.currentTimeMillis();
       Object o = ois.readObject();
       if (!(o instanceof VulnerableTaskHolder)) {
