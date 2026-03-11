@@ -143,6 +143,10 @@
     <xstream.version>1.4.5</xstream.version>
     <!-- do not update necessary for lesson -->
     <zxcvbn.version>1.5.2</zxcvbn.version>
+    <!-- Edits for the practice -->
+    <sonar.moduleKey>${project.groupId}:${project.artifactId}</sonar.moduleKey>
+    <skipTests>true</skipTests>
+    <sonar.organization>xelajr</sonar.organization>
   </properties>
 
   <dependencyManagement>
