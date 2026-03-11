@@ -47,7 +47,7 @@ public class InsecureDeserializationTask extends AssignmentEndpoint {
 
   private static final ObjectInputFilter DESERIALIZATION_FILTER =
       ObjectInputFilter.Config.createFilter(
-          VulnerableTaskHolder.class.getName() + ";!*");
+          VulnerableTaskHolder.class.getName() + ";java.lang.String;java.time.LocalDateTime;java.time.*;!*");
 
   @PostMapping("/InsecureDeserialization/task")
   @ResponseBody
