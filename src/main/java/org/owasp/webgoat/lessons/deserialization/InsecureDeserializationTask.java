@@ -25,8 +25,9 @@ package org.owasp.webgoat.lessons.deserialization;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InvalidClassException;
-import java.io.ObjectInputFilter;
 import java.io.ObjectInputStream;
+import java.io.ObjectStreamClass;
+import java.util.List;
 import java.util.Base64;
 import org.dummy.insecure.framework.VulnerableTaskHolder;
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
@@ -45,9 +46,28 @@ import org.springframework.web.bind.annotation.RestController;
 })
 public class InsecureDeserializationTask extends AssignmentEndpoint {
 
-  private static final ObjectInputFilter DESERIALIZATION_FILTER =
-      ObjectInputFilter.Config.createFilter(
-          VulnerableTaskHolder.class.getName() + ";java.lang.String;java.time.LocalDateTime;java.time.*;!*");
+  private static class SecureObjectInputStream extends ObjectInputStream {
+
+    private static final List<String> APPROVED_CLASSES = List.of(
+        VulnerableTaskHolder.class.getName(),
+        "java.lang.String",
+        "java.time.LocalDateTime",
+        "java.time.Ser"
+    );
+
+    SecureObjectInputStream(java.io.InputStream in) throws IOException {
+      super(in);
+    }
+
+    @Override
+    protected Class<?> resolveClass(ObjectStreamClass osc)
+        throws IOException, ClassNotFoundException {
+      if (!APPROVED_CLASSES.contains(osc.getName())) {
+        throw new InvalidClassException("Unauthorized deserialization attempt", osc.getName());
+      }
+      return super.resolveClass(osc);
+    }
+  }
 
   @PostMapping("/InsecureDeserialization/task")
   @ResponseBody
@@ -60,8 +80,7 @@ public class InsecureDeserializationTask extends AssignmentEndpoint {
     b64token = token.replace('-', '+').replace('_', '/');
 
     try (ObjectInputStream ois =
-        new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(b64token)))) {
-      ois.setObjectInputFilter(DESERIALIZATION_FILTER);
+        new SecureObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(b64token)))) {
       before = System.currentTimeMillis();
       Object o = ois.readObject();
       if (!(o instanceof VulnerableTaskHolder)) {
